@@ -4,11 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 	"io"
 	"net/http"
 
 	"github.com/chachacollins/iptracer/spinner"
 	"github.com/charmbracelet/huh"
+	"os"
+)
+
+const (
+	purple = lipgloss.Color("#ceaef3")
+	pink   = lipgloss.Color("#FFC0CB")
 )
 
 type Response struct {
@@ -19,6 +27,19 @@ type Response struct {
 }
 
 func main() {
+	re := lipgloss.NewRenderer(os.Stdout)
+	var (
+		// HeaderStyle is the lipgloss style used for the table headers.
+		HeaderStyle = re.NewStyle().Foreground(purple).Bold(true).Align(lipgloss.Center)
+		// CellStyle is the base lipgloss style used for the table rows.
+		CellStyle = re.NewStyle().Padding(0, 1).Width(14)
+		// OddRowStyle is the lipgloss style used for odd-numbered table rows.
+		OddRowStyle = CellStyle.Foreground(pink)
+		// EvenRowStyle is the lipgloss style used for even-numbered table rows.
+		EvenRowStyle = CellStyle.Foreground(pink)
+		// BorderStyle is the lipgloss style used for the table border.
+		BorderStyle = lipgloss.NewStyle().Foreground(purple)
+	)
 	var inputBody string
 	huh.NewInput().
 		Title("Enter IP ADDRESS").
@@ -59,13 +80,33 @@ func main() {
 		return
 	}
 	spinner.SpinnerClass("Unmarshalling json")
+	t := table.New().
+		Border(lipgloss.ThickBorder()).
+		BorderStyle(BorderStyle).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			var style lipgloss.Style
 
-	if len(responseData) > 0 {
-		fmt.Println("Country Code:", responseData[0].CountryCode)
-		fmt.Println("Country:", responseData[0].Country)
-		fmt.Println("City:", responseData[0].City)
-		fmt.Println("Query:", responseData[0].Query)
-	} else {
-		fmt.Println("No data returned")
-	}
+			switch {
+			case row == table.HeaderRow:
+				return HeaderStyle
+			case row%2 == 0:
+				style = EvenRowStyle
+			default:
+				style = OddRowStyle
+			}
+
+			// Make the second column a little wider.
+			if col == 1 {
+				style = style.Width(22)
+			}
+
+			return style
+		}).
+		Headers("Request", "Response").
+		Row("Country Code", responseData[0].CountryCode)
+	t.Row("Country", responseData[0].Country)
+	t.Row("City", responseData[0].City)
+	t.Row("Query", responseData[0].Query)
+	fmt.Println(t)
+
 }
