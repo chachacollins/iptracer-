@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
+
+	"github.com/chachacollins/iptracer/spinner"
+	"github.com/charmbracelet/huh"
 )
 
 type Response struct {
@@ -17,17 +19,17 @@ type Response struct {
 }
 
 func main() {
-	args := os.Args
-	if len(args) < 2 {
-		fmt.Println("Not enough arguments passed to the program")
-		help()
-		os.Exit(1)
-	}
+	var inputBody string
+	huh.NewInput().
+		Title("Enter IP ADDRESS").
+		Prompt(">").
+		Value(&inputBody).Run()
 
+	spinner.SpinnerClass("Proccessing input")
 	baseApiURL := "http://ip-api.com/batch"
 	body := []map[string]string{
 		{
-			"query":  args[1],
+			"query":  inputBody,
 			"fields": "city,country,countryCode,query",
 		},
 	}
@@ -36,13 +38,14 @@ func main() {
 		fmt.Println("Could not marshal the JSON")
 		return
 	}
-
+	spinner.SpinnerClass("Marshalling json")
 	res, err := http.Post(baseApiURL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
-		fmt.Printf("Could not make a POST request to IPADDRESS: %s\n", args[1])
+		fmt.Printf("Could not make a POST request to IPADDRESS: %s\n", inputBody)
 		return
 	}
 	defer res.Body.Close()
+	spinner.SpinnerClass("fetching response")
 
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -55,6 +58,7 @@ func main() {
 		fmt.Println("Could not unmarshal the response body")
 		return
 	}
+	spinner.SpinnerClass("Unmarshalling json")
 
 	if len(responseData) > 0 {
 		fmt.Println("Country Code:", responseData[0].CountryCode)
@@ -64,8 +68,4 @@ func main() {
 	} else {
 		fmt.Println("No data returned")
 	}
-}
-
-func help() {
-	fmt.Println("Usage: iptrace <IPADDRESS>")
 }
