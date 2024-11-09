@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/chachacollins/iptracer/spinner"
@@ -47,11 +48,31 @@ func main() {
 		Value(&inputBody).Run()
 
 	spinner.SpinnerClass("Proccessing input")
+	var reqForm []string
+	form := huh.NewForm(
+		huh.NewGroup(
+
+			huh.NewMultiSelect[string]().
+				Title("Choose response").
+				Options(
+					huh.NewOption("CountryCode", "countryCode").Selected(true),
+					huh.NewOption("Country", "country").Selected(true),
+					huh.NewOption("City", "city"),
+					huh.NewOption("Query", "query"),
+				).
+				Value(&reqForm),
+		),
+	)
+	err := form.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(reqForm)
 	baseApiURL := "http://ip-api.com/batch"
-	body := []map[string]string{
+	body := []map[string]interface{}{
 		{
 			"query":  inputBody,
-			"fields": "city,country,countryCode,query",
+			"fields": reqForm,
 		},
 	}
 	jsonData, err := json.Marshal(body)
