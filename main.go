@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	"io"
 	"log"
 	"net/http"
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
+
+	"os"
 
 	"github.com/chachacollins/iptracer/spinner"
 	"github.com/charmbracelet/huh"
-	"os"
 )
 
 const (
@@ -67,12 +70,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(reqForm)
+	fieldBody := strings.Join(reqForm, ",")
 	baseApiURL := "http://ip-api.com/batch"
 	body := []map[string]interface{}{
 		{
 			"query":  inputBody,
-			"fields": reqForm,
+			"fields": fieldBody,
 		},
 	}
 	jsonData, err := json.Marshal(body)
